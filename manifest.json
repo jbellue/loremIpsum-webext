@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "LoremIpsum",
-    "version": "0.1.0",
+    "version": "1.0.1",
     "author": "Julien Bellue",
   
     "description": "Insert Lorem Ipsum from the context menu",

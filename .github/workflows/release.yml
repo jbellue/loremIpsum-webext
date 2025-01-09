@@ -26,6 +26,7 @@ jobs:
           web-ext sign \
             --source-dir ./ \
             --artifacts-dir ./web-ext-artifacts \
+            --channel listed \
             --api-key ${{ secrets.AMO_JWT_ISSUER }} \
             --api-secret ${{ secrets.AMO_JWT_SECRET }}
 

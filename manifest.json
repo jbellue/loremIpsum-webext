@@ -6,7 +6,12 @@
   
     "description": "Insert Lorem Ipsum from the context menu",
     "homepage_url":  "https://github.com/jbellue/loremIpsum-webext/",
-  
+    
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{97831b45-a294-4129-ac21-45c5700f9748}"
+        }
+    },
     "permissions": [
         "storage",
         "contextMenus",

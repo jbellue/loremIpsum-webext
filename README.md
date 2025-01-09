@@ -3,6 +3,11 @@
 <p align="center">
   <img src="https://github.com/jbellue/loremIpsum-webext/blob/main/icons/icon.svg?raw=true" alt="Logo"/>
 </p>
+<p align="center">
+    <img src="https://github.com/jbellue/loremIpsum-webext/actions/workflows/lint-and-build.yml/badge.svg?branch=main" alt="action badge" />
+    <img src="https://img.shields.io/badge/version-v0.1.0-blue" alt="version badge" />
+    <img src="https://img.shields.io/github/license/jbellue/loremipsum-webext" alt="license badge" />
+</p>
 
 ## Overview
 

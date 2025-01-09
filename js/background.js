@@ -9,7 +9,7 @@ browser.runtime.onInstalled.addListener(() => {
     browser.contextMenus.create({
         id: "insertLoremIpsumContextMenu",
         title: "Insert LoremIpsum",
-        contexts: ["editable", "input"]
+        contexts: ["editable"]
     });
     // Load the text files and store their contents
     const promises = Object.keys(texts).map(async key => {

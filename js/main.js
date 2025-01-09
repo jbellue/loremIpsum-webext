@@ -101,16 +101,18 @@ browser.runtime.onMessage.addListener((message) => {
                 });
             }
             const createOption = (value, content) => {
-                return `<option value="${value}">${content}</option>`;
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = content;
+                return option;
             }
 
             function populateTextTypes(selectObject) {
                 browser.storage.local.get('texts').then((data) => {
-                    let optionsHTML = createOption("any", "Any");
+                    selectObject.appendChild(createOption("any", "Any"));
                     Object.keys(data.texts).forEach(key => {
-                        optionsHTML += createOption(key, data.texts[key].title);
+                        selectObject.appendChild(createOption(key, data.texts[key].title));
                     });
-                    selectObject.innerHTML = optionsHTML;
                 });
             }
 

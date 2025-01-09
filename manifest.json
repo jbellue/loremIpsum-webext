@@ -1,0 +1,30 @@
+{
+    "manifest_version": 2,
+    "name": "LoremIpsum",
+    "version": "0.1",
+  
+    "description": "Insert Lorem Ipsum from the context menu",
+  
+    "permissions": [
+        "storage",
+        "contextMenus",
+        "activeTab"
+    ],
+    "background": {
+        "scripts": ["js/background.js"],
+        "persistent": false
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["js/main.js"]
+        }
+    ],
+    "browser_action": {
+        "default_icon": {
+            "16": "icons/icon-16.png",
+            "48": "icons/icon-48.png",
+            "128": "icons/icon-128.png"
+        }
+    }
+}

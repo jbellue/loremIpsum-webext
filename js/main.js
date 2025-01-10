@@ -46,98 +46,52 @@ browser.runtime.onMessage.addListener((message) => {
             popup.style.top = `${rect.bottom + window.scrollY}px`; // Position below the input
 
             // Add content to the popup
-            popup.innerHTML = `
-<div class="loremIpsumContainer">
-    <div class="loremIpsumColumn">
-        <div class="loremIpsumSliderContainer">
-            <input type="range" id="loremIpsumNumberSlider" min="1" max="20" class="loremIpsumSlider" aria-label="Number of items to generate">
-            <span id="loremIpsumSliderValue" class="loremIpsumSliderValue"></span>
-        </div>
-        <select id="loremIpsumSourceText" class="loremIpsumSelect" aria-label="Select type of text to generate"></select>
-    </div>
-    <div class="loremIpsumColumnFlex">
-        <select id="loremIpsumUnits" class="loremIpsumSelect" aria-label="Select unit of measurement">
-            <option value="paragraphs">Paragraphs</option>
-            <option value="words">Words</option>
-            <option value="letters">Letters</option>
-        </select>
-        <button id="loremIpsumGenerate" class="loremIpsumButton" aria-label="Generate Lorem Ipsum text">Generate ✏️</button>
-    </div>
-</div>`;
-            // Append overlay and popup to the shadowroot
-            shadowRoot.appendChild(overlay);
-            shadowRoot.appendChild(popup);
-            shadowRoot.appendChild(link);
+            fetch(chrome.runtime.getURL("html/popup.html"))
+                .then(response => response.text())
+                .then(data => popup.innerHTML = data)
+                .then(() => {
+                    // Append overlay and popup to the shadowroot
+                    shadowRoot.appendChild(overlay);
+                    shadowRoot.appendChild(popup);
+                    shadowRoot.appendChild(link);
 
-            // Update the displayed value of the slider
-            const slider = shadowRoot.getElementById("loremIpsumNumberSlider");
-            const sliderValue = shadowRoot.getElementById("loremIpsumSliderValue");
-            const units = shadowRoot.getElementById("loremIpsumUnits");
-            const sourceText = shadowRoot.getElementById("loremIpsumSourceText");
-            
-            populateTextTypes(sourceText);
+                    // Update the displayed value of the slider
+                    const slider = shadowRoot.getElementById("loremIpsumNumberSlider");
+                    const sliderValue = shadowRoot.getElementById("loremIpsumSliderValue");
+                    const units = shadowRoot.getElementById("loremIpsumUnits");
+                    const sourceText = shadowRoot.getElementById("loremIpsumSourceText");
+                    
+                    populateTextTypes(sourceText);
 
-            // Function to update the slider value position
-            const updateSliderValuePosition = () => {
-                sliderValue.textContent = settings.count;
-                const thumbWidth = 20; // Approximate width of the slider thumb
-                const valueWidth = sliderValue.offsetWidth; // Get the width of the slider value text
-                const valuePercentage = (settings.count - slider.min) / (slider.max - slider.min); // Calculate the percentage of the current value
-                sliderValue.style.left = `${valuePercentage * (slider.offsetWidth - thumbWidth) + (thumbWidth / 2) - (valueWidth / 2)}px`; // Adjust position
-            };
-            
-            function loadUserSettings(slider, units, sourceText) {
-                browser.storage.local.get('userSettings').then((result) => {
-                    // Access individual properties
-                    if (result.userSettings) {
-                        settings.count = result.userSettings.count;
-                        settings.unit = result.userSettings.unit;
-                        settings.sourceText = result.userSettings.sourceText;
-                    }
-                    slider.value = settings.count;
-                    updateSliderValuePosition();
-                    units.value = settings.unit;
-                    sourceText.value = settings.sourceText;
-                });
-            }
-            const createOption = (value, content) => {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = content;
-                return option;
-            }
+                    // Initial position calculation
+                    updateSliderValuePosition(sliderValue, slider);
 
-            function populateTextTypes(selectObject) {
-                browser.storage.local.get('texts').then((data) => {
-                    selectObject.appendChild(createOption("any", "Any"));
-                    Object.keys(data.texts).forEach(key => {
-                        selectObject.appendChild(createOption(key, data.texts[key].title));
+                    slider.addEventListener("input", () => {
+                        settings.count = slider.value;
+                        updateSliderValuePosition(sliderValue, slider);
+                        storeSettings();
                     });
-                });
-            }
+                    
+                    units.addEventListener('change', () => {
+                        settings.unit = units.value;
+                        storeSettings();
+                    })
+                    
+                    sourceText.addEventListener('change', () => {
+                        settings.sourceText = sourceText.value;
+                        storeSettings();
+                    })
 
-            // Initial position calculation
-            updateSliderValuePosition();
+                    // Add event listeners for the button
+                    shadowRoot.getElementById("loremIpsumGenerate").addEventListener("click", insertLoremIpsumThenCleanup);
 
-            slider.addEventListener("input", () => {
-                settings.count = slider.value;
-                updateSliderValuePosition();
-                storeSettings();
-            });
-            
-            units.addEventListener('change', () => {
-                settings.unit = units.value;
-                storeSettings();
-            })
-            
-            sourceText.addEventListener('change', () => {
-                settings.sourceText = sourceText.value;
-                storeSettings();
-            })
-
-            // Add event listeners for the button
-            shadowRoot.getElementById("loremIpsumGenerate").addEventListener("click", insertLoremIpsumThenCleanup);
-
+                    // Remove the popup and overlay when clicking outside of the popup or pressing escape
+                    overlay.addEventListener("click", cleanup);
+                    document.addEventListener("keydown", keyboardHandler)
+        
+                    loadUserSettings(slider, units, sourceText, sliderValue);
+                }
+            );
             function insertLoremIpsumThenCleanup() {
                 generateLoremIpsum().then(loremText => {
                     if (targetElement.isContentEditable) {
@@ -149,7 +103,7 @@ browser.runtime.onMessage.addListener((message) => {
                 })
                 cleanup();
             }
-
+            
             // Function to remove the overlay and popup
             function cleanup() {
                 shadowRoot.getElementById("loremIpsumGenerate").removeEventListener("click", insertLoremIpsumThenCleanup);
@@ -160,7 +114,7 @@ browser.runtime.onMessage.addListener((message) => {
                 shadowRoot.removeChild(popup);
                 document.body.removeChild(shadowHost);
             }
-
+            
             // Function to remove the overlay and popup
             function keyboardHandler(e) {
                 if (e.key === "Escape") {
@@ -170,17 +124,50 @@ browser.runtime.onMessage.addListener((message) => {
                     insertLoremIpsumThenCleanup();
                 }
             }
-
-            // Remove the popup and overlay when clicking outside of the popup or pressing escape
-            overlay.addEventListener("click", cleanup);
-            document.addEventListener("keydown", keyboardHandler)
-
-            loadUserSettings(slider, units, sourceText);
         } else {
             console.error("No valid input element found at the clicked position.");
         }
     }
 });
+
+// Function to update the slider value position
+const updateSliderValuePosition = (sliderValue, slider) => {
+    sliderValue.textContent = settings.count;
+    const thumbWidth = 20; // Approximate width of the slider thumb
+    const valueWidth = sliderValue.offsetWidth; // Get the width of the slider value text
+    const valuePercentage = (settings.count - slider.min) / (slider.max - slider.min); // Calculate the percentage of the current value
+    sliderValue.style.left = `${valuePercentage * (slider.offsetWidth - thumbWidth) + (thumbWidth / 2) - (valueWidth / 2)}px`; // Adjust position
+};
+
+function loadUserSettings(slider, units, sourceText, sliderValue) {
+    browser.storage.local.get('userSettings').then((result) => {
+        // Access individual properties
+        if (result.userSettings) {
+            settings.count = result.userSettings.count;
+            settings.unit = result.userSettings.unit;
+            settings.sourceText = result.userSettings.sourceText;
+        }
+        slider.value = settings.count;
+        updateSliderValuePosition(sliderValue, slider);
+        units.value = settings.unit;
+        sourceText.value = settings.sourceText;
+    });
+}
+const createOption = (value, content) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = content;
+    return option;
+}
+
+function populateTextTypes(selectObject) {
+    browser.storage.local.get('texts').then((data) => {
+        selectObject.appendChild(createOption("any", "Any"));
+        Object.keys(data.texts).forEach(key => {
+            selectObject.appendChild(createOption(key, data.texts[key].title));
+        });
+    });
+}
 
 function generateLoremIpsum() {
     return browser.storage.local.get('texts').then((data) => {

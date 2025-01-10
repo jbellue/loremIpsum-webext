@@ -1,0 +1,11 @@
+{
+    "options.title": "Options",
+    "options.interfaceLanguage": "Interface language",
+    "options.selectAvailableTexts": "Select available texts",
+    "options.saveButton": "Save",
+
+    "popup.units.paragraphs": "Paragraphs",
+    "popup.units.words": "Words",
+    "popup.units.letters": "Letters",
+    "popup.button.generate": "Generate ✏️"
+}

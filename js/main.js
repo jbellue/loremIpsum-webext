@@ -27,8 +27,6 @@ browser.runtime.onMessage.addListener((message) => {
     if (message.action === "showLoremIpsumModal") {
         // Check if the targetElement is valid
         if (targetElement) {
-            const rect = targetElement.getBoundingClientRect();
-
             const shadowHost = document.createElement('div');
             document.body.appendChild(shadowHost);
             const shadowRoot = shadowHost.attachShadow({mode: 'closed'});
@@ -42,6 +40,7 @@ browser.runtime.onMessage.addListener((message) => {
             popup.id = "loremIpsumPopup";
 
             // Position the popup roughly over the input element
+            const rect = targetElement.getBoundingClientRect();
             popup.style.left = `${rect.left + window.scrollX}px`; // Adjust for scrolling
             popup.style.top = `${rect.bottom + window.scrollY}px`; // Position below the input
 
@@ -56,6 +55,12 @@ browser.runtime.onMessage.addListener((message) => {
 
                     // Append the content to the body of the current document
                     popup.appendChild(content);
+                })
+                .then(() => {  
+                    browser.storage.sync.get('language').then(data => {
+                        const selectedLanguage = data.language || 'en';
+                        localizePage(selectedLanguage, popup);
+                    });
                 })
                 .then(() => {
                     // Append overlay and popup to the shadowroot
@@ -168,15 +173,36 @@ const createOption = (value, content) => {
     return option;
 }
 
-function populateTextTypes(selectObject) {
-    browser.storage.local.get('texts').then((data) => {
-        const fragment = document.createDocumentFragment();
-        fragment.appendChild(createOption("any", "Any"));
-        Object.keys(data.texts).forEach(key => {
-            fragment.appendChild(createOption(key, data.texts[key].title));
+async function populateTextTypes(selectObject) {
+    const sourceTextsRes = await browser.storage.sync.get('sourceTexts');
+    const selectedSources = sourceTextsRes.sourceTexts || [];
+
+    // Get the available texts
+    const textsRes = await browser.storage.local.get('texts');
+    const fragment = document.createDocumentFragment();
+
+    // If selectedSources is empty, select everything
+    if (selectedSources.length === 0) {
+        // Append all available options
+        fragment.appendChild(createOption("any", "🎲 Any"));
+        Object.keys(textsRes.texts).forEach(key => {
+            fragment.appendChild(createOption(key, textsRes.texts[key].title));
         });
-        selectObject.appendChild(fragment);
-    });
+    } else {
+        // Create options only for the selected sources
+        if (selectedSources.includes("any")) {
+            fragment.appendChild(createOption("any", "🎲 Any"));
+        }
+        // Create options only for the selected sources
+        Object.keys(textsRes.texts).forEach(key => {
+            if (selectedSources.includes(key)) {
+                fragment.appendChild(createOption(key, textsRes.texts[key].title));
+            }
+        });
+    }
+
+    // Append the fragment to the select object
+    selectObject.appendChild(fragment);
 }
 
 function generateLoremIpsum() {

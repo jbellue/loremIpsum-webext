@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "LoremIpsum",
-    "version": "1.0.1",
+    "version": "1.2.1",
     "author": "Julien Bellue",
   
     "description": "Insert Lorem Ipsum from the context menu",
@@ -17,6 +17,9 @@
         "contextMenus",
         "activeTab"
     ],
+    "options_ui": {
+        "page": "html/options.html"
+    },
     "background": {
         "scripts": ["js/background.js"],
         "persistent": false
@@ -25,7 +28,7 @@
         {
             "matches": ["<all_urls>"],
             "all_frames": true,
-            "js": ["js/main.js"]
+            "js": ["js/localization.js", "js/main.js"]
         }
     ],
     "icons": {

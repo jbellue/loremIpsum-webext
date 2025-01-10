@@ -1,14 +1,18 @@
 const texts = {
-    lorem_ipsum: {title: "Lorem Ipsum", file: "data/lorem_ipsum.txt"},
-    moby_dick: {title: "Moby Dick", file: "data/moby_dick.txt"},
-    great_expectations: {title: "Great Expectations", file: "data/great_expectations.txt"},
-    metamorphosis: {title: "The Metamorphosis", file: "data/metamorphosis.txt"}
+    lorem_ipsum: {title: "🇻🇦 Lorem Ipsum", file: "data/lorem_ipsum.txt"},
+    moby_dick: {title: "🇬🇧 Moby Dick", file: "data/moby_dick.txt"},
+    great_expectations: {title: "🇺🇸 Great Expectations", file: "data/great_expectations.txt"},
+    call_of_the_wild: {title: "🇺🇸 The Call of the Wild", file: "data/call_of_the_wild.txt"},
+    a_la_recherche_du_temps_perdu: {title: "🇫🇷 À la recherche du temps perdu", file: "data/a_la_recherche_du_temps_perdu.txt"},
+    germinal: {title: "🇫🇷 Germinal", file: "data/germinal.txt"},
+    les_miserables: {title: "🇫🇷 Les misérables", file: "data/les_miserables.txt"},
+    don_quixote: {title: "🇪🇸 Don Quixote", file: "data/don_quixote.txt"}
 };
 
 browser.runtime.onInstalled.addListener(() => {
     browser.contextMenus.create({
         id: "insertLoremIpsumContextMenu",
-        title: "Insert LoremIpsum",
+        title: "LoremIpsum",
         contexts: ["editable"]
     });
     // Load the text files and store their contents

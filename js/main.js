@@ -48,7 +48,15 @@ browser.runtime.onMessage.addListener((message) => {
             // Add content to the popup
             fetch(chrome.runtime.getURL("html/popup.html"))
                 .then(response => response.text())
-                .then(data => popup.innerHTML = data)
+                .then(data => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data, 'text/html');
+                    // Get the content from the parsed document
+                    const content = doc.body.firstChild;
+
+                    // Append the content to the body of the current document
+                    popup.appendChild(content);
+                })
                 .then(() => {
                     // Append overlay and popup to the shadowroot
                     shadowRoot.appendChild(overlay);

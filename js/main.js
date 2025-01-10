@@ -170,10 +170,12 @@ const createOption = (value, content) => {
 
 function populateTextTypes(selectObject) {
     browser.storage.local.get('texts').then((data) => {
-        selectObject.appendChild(createOption("any", "Any"));
+        const fragment = document.createDocumentFragment();
+        fragment.appendChild(createOption("any", "Any"));
         Object.keys(data.texts).forEach(key => {
-            selectObject.appendChild(createOption(key, data.texts[key].title));
+            fragment.appendChild(createOption(key, data.texts[key].title));
         });
+        selectObject.appendChild(fragment);
     });
 }
 

@@ -31,14 +31,13 @@ jobs:
             --api-secret ${{ secrets.AMO_JWT_SECRET }}
 
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
           body: |
             Release for ${{ github.ref_name }}
           draft: false
           prerelease: false
+          generate_release_notes: true
           files: web-ext-artifacts/*.xpi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true
+          make_latest: true

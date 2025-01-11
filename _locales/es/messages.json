@@ -1,0 +1,21 @@
+{
+    "options_selectAvailableTexts": {
+        "message": "Seleccionar textos disponibles"
+    },
+    "options_saveButton": {
+        "message": "Guardar"
+    },
+
+    "popup_units_paragraphs": {
+        "message": "Párrafos"
+    },
+    "popup_units_words": {
+        "message": "Palabras"
+    },
+    "popup_units_letters": {
+        "message": "Letras"
+    },
+    "popup_button_generate": {
+        "message": "Generar ✏️"
+    }
+}

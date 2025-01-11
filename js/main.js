@@ -56,13 +56,8 @@ browser.runtime.onMessage.addListener((message) => {
                     // Append the content to the body of the current document
                     popup.appendChild(content);
                 })
-                .then(() => {  
-                    browser.storage.sync.get('language').then(data => {
-                        const selectedLanguage = data.language || 'en';
-                        localizePage(selectedLanguage, popup);
-                    });
-                })
-                .then(() => {
+                .then(async () => {
+                    localizePage(popup);
                     // Append overlay and popup to the shadowroot
                     shadowRoot.appendChild(overlay);
                     shadowRoot.appendChild(popup);
@@ -73,8 +68,8 @@ browser.runtime.onMessage.addListener((message) => {
                     const sliderValue = shadowRoot.getElementById("loremIpsumSliderValue");
                     const units = shadowRoot.getElementById("loremIpsumUnits");
                     const sourceText = shadowRoot.getElementById("loremIpsumSourceText");
-                    
-                    populateTextTypes(sourceText);
+
+                    await populateSourceTexts(sourceText);
 
                     // Initial position calculation
                     updateSliderValuePosition(sliderValue, slider);
@@ -84,12 +79,12 @@ browser.runtime.onMessage.addListener((message) => {
                         updateSliderValuePosition(sliderValue, slider);
                         storeSettings();
                     });
-                    
+
                     units.addEventListener('change', () => {
                         settings.unit = units.value;
                         storeSettings();
                     })
-                    
+
                     sourceText.addEventListener('change', () => {
                         settings.sourceText = sourceText.value;
                         storeSettings();
@@ -100,8 +95,8 @@ browser.runtime.onMessage.addListener((message) => {
 
                     // Remove the popup and overlay when clicking outside of the popup or pressing escape
                     overlay.addEventListener("click", cleanup);
-                    document.addEventListener("keydown", keyboardHandler)
-        
+                    document.addEventListener("keydown", keyboardHandler);
+
                     loadUserSettings(slider, units, sourceText, sliderValue);
                 }
             );
@@ -116,18 +111,18 @@ browser.runtime.onMessage.addListener((message) => {
                 })
                 cleanup();
             }
-            
+
             // Function to remove the overlay and popup
             function cleanup() {
                 shadowRoot.getElementById("loremIpsumGenerate").removeEventListener("click", insertLoremIpsumThenCleanup);
                 document.removeEventListener("keydown", keyboardHandler);
                 overlay.removeEventListener("click", cleanup);
-                
+
                 shadowRoot.removeChild(overlay);
                 shadowRoot.removeChild(popup);
                 document.body.removeChild(shadowHost);
             }
-            
+
             // Function to remove the overlay and popup
             function keyboardHandler(e) {
                 if (e.key === "Escape") {
@@ -164,6 +159,15 @@ function loadUserSettings(slider, units, sourceText, sliderValue) {
         updateSliderValuePosition(sliderValue, slider);
         units.value = settings.unit;
         sourceText.value = settings.sourceText;
+        // Check if the selected value is valid
+        if (![...sourceText.options].some(option => option.value === settings.sourceText)) {
+            // If the value is not found, select the first available option
+            if (sourceText.options.length > 0) {
+                sourceText.value = sourceText.options[0].value; // Select the first option
+                settings.sourceText = sourceText.value; // Update settings to the new value
+                storeSettings()
+            }
+        }
     });
 }
 const createOption = (value, content) => {
@@ -173,55 +177,69 @@ const createOption = (value, content) => {
     return option;
 }
 
-async function populateTextTypes(selectObject) {
-    const sourceTextsRes = await browser.storage.sync.get('sourceTexts');
-    const selectedSources = sourceTextsRes.sourceTexts || [];
+function populateSourceTexts(selectObject) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const sourceTextsRes = await browser.storage.sync.get('sourceTexts');
+            const selectedSources = sourceTextsRes.sourceTexts || [];
 
-    // Get the available texts
-    const textsRes = await browser.storage.local.get('texts');
-    const fragment = document.createDocumentFragment();
+            // Get the available texts
+            const textsRes = await browser.storage.local.get('texts');
+            const fragment = document.createDocumentFragment();
 
-    // If selectedSources is empty, select everything
-    if (selectedSources.length === 0) {
-        // Append all available options
-        fragment.appendChild(createOption("any", "🎲 Any"));
-        Object.keys(textsRes.texts).forEach(key => {
-            fragment.appendChild(createOption(key, textsRes.texts[key].title));
-        });
-    } else {
-        // Create options only for the selected sources
-        if (selectedSources.includes("any")) {
-            fragment.appendChild(createOption("any", "🎲 Any"));
-        }
-        // Create options only for the selected sources
-        Object.keys(textsRes.texts).forEach(key => {
-            if (selectedSources.includes(key)) {
-                fragment.appendChild(createOption(key, textsRes.texts[key].title));
+            // If selectedSources is empty, select everything
+            if (selectedSources.length === 0) {
+                // Append all available options
+                fragment.appendChild(createOption("any", "🎲 Any"));
+                Object.keys(textsRes.texts).forEach(key => {
+                    fragment.appendChild(createOption(key, textsRes.texts[key].title));
+                });
+            } else {
+                // Create options only for the selected sources
+                if (selectedSources.includes("any")) {
+                    fragment.appendChild(createOption("any", "🎲 Any"));
+                }
+                // Create options only for the selected sources
+                Object.keys(textsRes.texts).forEach(key => {
+                    if (selectedSources.includes(key)) {
+                        fragment.appendChild(createOption(key, textsRes.texts[key].title));
+                    }
+                });
             }
-        });
-    }
 
-    // Append the fragment to the select object
-    selectObject.appendChild(fragment);
+            // Append the fragment to the select object
+            selectObject.appendChild(fragment);
+
+            // Resolve the promise after appending the options
+            resolve();
+        } catch (error) {
+            // Reject the promise in case of an error
+            reject(error);
+        }
+    });
 }
 
 function generateLoremIpsum() {
-    return browser.storage.local.get('texts').then((data) => {
-        // Access individual properties
+    return browser.storage.local.get('texts').then(async (data) => {
         if (data.texts) {
             let sourceTextId;
-
             if (settings.sourceText === "any") {
-                const keys = Object.keys(data.texts);
-                sourceTextId = keys[Math.floor(Math.random() * keys.length)];
+                const selectedSources = await browser.storage.sync.get('sourceTexts');
+                const availableSources = selectedSources.sourceTexts.filter(source => source !== "any");
+                if (availableSources.length > 0) {
+                    sourceTextId = availableSources[Math.floor(Math.random() * availableSources.length)];
+                } else {
+                    console.error("Lorem Ipsum: no source text found");
+                    return "";
+                }
             } else {
                 sourceTextId = settings.sourceText;
             }
             const sourceText = data.texts[sourceTextId].data;
             const words = sourceText.split(" ");
             const totalWords = words.length;
+
             let result = "";
-        
             if (settings.unit === "words") {
                 for (let i = 0; i < settings.count; i++) {
                     result += words[i % totalWords] + " "; // Use modulo to wrap around
@@ -237,7 +255,6 @@ function generateLoremIpsum() {
                     result += paragraphs[i % paragraphs.length] + "\n\n"; // Use modulo to wrap around
                 }
             }
-        
             return result.trim(); // Trim any trailing spaces
         }
         return "";

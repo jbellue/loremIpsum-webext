@@ -1,34 +1,19 @@
-async function saveOptions(e) {
-    e.preventDefault();
-    const language = document.getElementById("language-selector").value;
-    await browser.storage.sync.set({
-        language: language
-    });
-
-    // Save the state of the checkboxes
-    const checkboxes = document.querySelectorAll(".source-text-checkbox");
-    const selectedSources = Array.from(checkboxes)
-        .filter(checkbox => checkbox.checked)
-        .map(checkbox => checkbox.value);
-    
+async function saveOptions(selectedSources) {
     await browser.storage.sync.set({
         sourceTexts: selectedSources
     });
 }
 
 async function restoreOptions() {
-    let res = await browser.storage.sync.get('language');
-    const selectedLanguage = res.language || 'en';
-    document.getElementById("language-selector").value = selectedLanguage;
-    localizePage(selectedLanguage, document);
-    
+    localizePage(document);
+
     // Restore the state of the checkboxes
-    res = await browser.storage.sync.get('sourceTexts');
+    let res = await browser.storage.sync.get('sourceTexts');
     const selectedBooks = res.sourceTexts || [];
 
     // Create checkboxes first
     await createCheckboxes(document.getElementById("checkbox-container"));
-    
+
     // Then set the checked state
     const checkboxes = document.querySelectorAll(".source-text-checkbox");
     // If selectedBooks is empty, check all checkboxes
@@ -46,12 +31,21 @@ async function restoreOptions() {
 
 const createCheckbox = (value, content) => {
     const label = document.createElement("label");
-    const option = document.createElement("input");
-    option.type = "checkbox";
-    option.value = value;
-    option.className = "source-text-checkbox";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = value;
+    checkbox.className = "source-text-checkbox";
+
+    // Add change event listener to the checkbox
+    checkbox.addEventListener('change', () => {
+        const checkboxes = document.querySelectorAll(".source-text-checkbox");
+        const selectedSources = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+        saveOptions(selectedSources);
+    });
     const labelText = document.createTextNode(content);
-    label.appendChild(option);
+    label.appendChild(checkbox);
     label.appendChild(labelText);
     return label;
 }
@@ -69,8 +63,3 @@ function createCheckboxes(container) {
 
 
 document.addEventListener('DOMContentLoaded', restoreOptions);
-document.querySelector("form").addEventListener("submit", saveOptions);
-document.getElementById("language-selector").addEventListener('change', e => {
-    const selectedLanguage = e.target.value;
-    localizePage(selectedLanguage, document);
-});

@@ -5,7 +5,7 @@ async function saveOptions(selectedSources) {
 }
 
 async function restoreOptions() {
-    localizePage(document);
+    document.getElementById("checkbox-container-label").innerText = browser.i18n.getMessage("options_selectAvailableTexts");
 
     // Restore the state of the checkboxes
     let res = await browser.storage.sync.get('sourceTexts');
@@ -53,7 +53,7 @@ const createCheckbox = (value, content) => {
 function createCheckboxes(container) {
     return browser.storage.local.get('texts').then((data) => {
         const fragment = document.createDocumentFragment();
-        fragment.appendChild(createCheckbox("any", "🎲 Any"));
+        fragment.appendChild(createCheckbox("any", `🎲 ${browser.i18n.getMessage("options_randomSelection")}`));
         Object.keys(data.texts).forEach(key => {
             fragment.appendChild(createCheckbox(key, data.texts[key].title));
         });

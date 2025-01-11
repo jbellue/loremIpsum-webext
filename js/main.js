@@ -14,7 +14,7 @@ const settings = {
 const storeSettings = () => {
     browser.storage.local.set({ userSettings: settings })
     .catch((error) => {
-        console.error('Error updating lorem ipsum settings:', error);
+        console.error(browser.i18n.getMessage("errors_noUserSettingsInStorage"), error);
     });
 }
 
@@ -30,10 +30,12 @@ browser.runtime.onMessage.addListener((message) => {
             const shadowHost = document.createElement('div');
             document.body.appendChild(shadowHost);
             const shadowRoot = shadowHost.attachShadow({mode: 'closed'});
-            
+            const fragment = document.createDocumentFragment();
+
             // Create the overlay
             const overlay = document.createElement("div");
             overlay.id = "loremIpsumOverlay";
+            overlay.addEventListener("click", cleanup);
 
             // Create the popup
             const popup = document.createElement("div");
@@ -44,62 +46,99 @@ browser.runtime.onMessage.addListener((message) => {
             popup.style.left = `${rect.left + window.scrollX}px`; // Adjust for scrolling
             popup.style.top = `${rect.bottom + window.scrollY}px`; // Position below the input
 
-            // Add content to the popup
-            fetch(chrome.runtime.getURL("html/popup.html"))
-                .then(response => response.text())
-                .then(data => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(data, 'text/html');
-                    // Get the content from the parsed document
-                    const content = doc.body.firstChild;
+            // Create the container
+            const loremIpsumContainer = document.createElement('div');
+            loremIpsumContainer.className = 'loremIpsumContainer';
+            const loremIpsumColumn = document.createElement('div');
+            loremIpsumColumn.className = 'loremIpsumColumn';
+            const loremIpsumSliderContainer = document.createElement('div');
+            loremIpsumSliderContainer.className = 'loremIpsumSliderContainer';
 
-                    // Append the content to the body of the current document
-                    popup.appendChild(content);
-                })
-                .then(async () => {
-                    localizePage(popup);
-                    // Append overlay and popup to the shadowroot
-                    shadowRoot.appendChild(overlay);
-                    shadowRoot.appendChild(popup);
-                    shadowRoot.appendChild(link);
+            // Create the slider input
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.id = 'loremIpsumNumberSlider';
+            slider.min = '1';
+            slider.max = '20';
+            slider.className = 'loremIpsumSlider';
+            slider.setAttribute('aria-label', browser.i18n.getMessage("aria_sliderDescription"));
+            slider.addEventListener("input", () => {
+                settings.count = slider.value;
+                updateSliderValuePosition(sliderValue, slider);
+                storeSettings();
+            });
 
-                    // Update the displayed value of the slider
-                    const slider = shadowRoot.getElementById("loremIpsumNumberSlider");
-                    const sliderValue = shadowRoot.getElementById("loremIpsumSliderValue");
-                    const units = shadowRoot.getElementById("loremIpsumUnits");
-                    const sourceText = shadowRoot.getElementById("loremIpsumSourceText");
+            // Create the slider value display
+            const sliderValue = document.createElement('span');
+            sliderValue.id = 'loremIpsumSliderValue';
+            sliderValue.className = 'loremIpsumSliderValue';
 
-                    await populateSourceTexts(sourceText);
+            loremIpsumSliderContainer.appendChild(slider);
+            loremIpsumSliderContainer.appendChild(sliderValue);
+            loremIpsumColumn.appendChild(loremIpsumSliderContainer);
 
-                    // Initial position calculation
-                    updateSliderValuePosition(sliderValue, slider);
+            // Create the source text select
+            const sourceText = document.createElement('select');
+            sourceText.id = 'loremIpsumSourceText';
+            sourceText.className = 'loremIpsumSelect';
+            sourceText.setAttribute('aria-label', browser.i18n.getMessage("aria_sourceTextDescription"));
+            sourceText.addEventListener('change', () => {
+                settings.sourceText = sourceText.value;
+                storeSettings();
+            });
 
-                    slider.addEventListener("input", () => {
-                        settings.count = slider.value;
-                        updateSliderValuePosition(sliderValue, slider);
-                        storeSettings();
-                    });
+            loremIpsumColumn.appendChild(sourceText);
+            loremIpsumContainer.appendChild(loremIpsumColumn);
 
-                    units.addEventListener('change', () => {
-                        settings.unit = units.value;
-                        storeSettings();
-                    })
+            // Create the second column
+            const loremIpsumColumnFlex = document.createElement('div');
+            loremIpsumColumnFlex.className = 'loremIpsumColumnFlex';
 
-                    sourceText.addEventListener('change', () => {
-                        settings.sourceText = sourceText.value;
-                        storeSettings();
-                    })
+            // Create the units select
+            const units = document.createElement('select');
+            units.id = 'loremIpsumUnits';
+            units.className = 'loremIpsumSelect';
+            units.setAttribute('aria-label', browser.i18n.getMessage("aria_unitsDescription"));
+            units.addEventListener('change', () => {
+                settings.unit = units.value;
+                storeSettings();
+            });
+            // Create options for units
+            const options = [
+                { value: 'paragraphs', text: browser.i18n.getMessage("popup_units_paragraphs") },
+                { value: 'words',      text: browser.i18n.getMessage("popup_units_words") },
+                { value: 'letters',    text: browser.i18n.getMessage("popup_units_letters") }
+            ];
+            options.forEach(optionData => {
+                const option = document.createElement('option');
+                option.value = optionData.value;
+                option.textContent = optionData.text;
+                units.appendChild(option);
+            });
+            loremIpsumColumnFlex.appendChild(units);
 
-                    // Add event listeners for the button
-                    shadowRoot.getElementById("loremIpsumGenerate").addEventListener("click", insertLoremIpsumThenCleanup);
+            // Create the generate button
+            const generateButton = document.createElement('button');
+            generateButton.id = 'loremIpsumGenerate';
+            generateButton.className = 'loremIpsumButton';
+            generateButton.setAttribute('aria-label', browser.i18n.getMessage("aria_generateButtonDescription"));
+            generateButton.textContent = browser.i18n.getMessage("popup_button_generate");
+            generateButton.addEventListener("click", insertLoremIpsumThenCleanup);
 
-                    // Remove the popup and overlay when clicking outside of the popup or pressing escape
-                    overlay.addEventListener("click", cleanup);
-                    document.addEventListener("keydown", keyboardHandler);
+            loremIpsumColumnFlex.appendChild(generateButton);
+            loremIpsumContainer.appendChild(loremIpsumColumnFlex);
+            popup.appendChild(loremIpsumContainer);
+            fragment.appendChild(overlay);
+            fragment.appendChild(popup);
+            fragment.appendChild(link);
+            shadowRoot.appendChild(fragment);
 
-                    loadUserSettings(slider, units, sourceText, sliderValue);
-                }
-            );
+            updateSliderValuePosition(sliderValue, slider);
+            document.addEventListener("keydown", keyboardHandler);
+            populateSourceTexts(sourceText).then(() => {
+                loadUserSettings(slider, units, sourceText, sliderValue);
+            });
+
             function insertLoremIpsumThenCleanup() {
                 generateLoremIpsum().then(loremText => {
                     if (targetElement.isContentEditable) {
@@ -133,7 +172,7 @@ browser.runtime.onMessage.addListener((message) => {
                 }
             }
         } else {
-            console.error("No valid input element found at the clicked position.");
+            console.error(browser.i18n.getMessage("errors_noValidInputElement"));
         }
     }
 });
@@ -188,16 +227,17 @@ function populateSourceTexts(selectObject) {
             const fragment = document.createDocumentFragment();
 
             // If selectedSources is empty, select everything
+            const optionAny = createOption("any", `🎲 ${browser.i18n.getMessage("options_randomSelection")}`);
             if (selectedSources.length === 0) {
                 // Append all available options
-                fragment.appendChild(createOption("any", "🎲 Any"));
+                fragment.appendChild(optionAny);
                 Object.keys(textsRes.texts).forEach(key => {
                     fragment.appendChild(createOption(key, textsRes.texts[key].title));
                 });
             } else {
                 // Create options only for the selected sources
                 if (selectedSources.includes("any")) {
-                    fragment.appendChild(createOption("any", "🎲 Any"));
+                    fragment.appendChild(optionAny);
                 }
                 // Create options only for the selected sources
                 Object.keys(textsRes.texts).forEach(key => {

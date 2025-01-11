@@ -1,9 +1,36 @@
 {
+    "manifest_description": {
+        "message": "Insert Lorem Ipsum from the context menu"
+    },
+
+    "aria_sliderDescription": {
+        "message": "Number of items to generate"
+    },
+    "aria_sourceTextDescription": {
+        "message": "Select source text to generate"
+    },
+    "aria_unitsDescription": {
+        "message": "Select unit of measurement"
+    },
+    "aria_generateButtonDescription": {
+        "message": "Generate Lorem Ipsum text"
+    },
+
+    "errors_noSourceTextFound": {
+        "message": "Lorem Ipsum: no source text found"
+    },
+    "errors_noUserSettingsInStorage": {
+        "message": "Lorem Ipsum: error updating settings:"
+    },
+    "errors_noValidInputElement": {
+        "message": "Lorem Ipsum: no valid input element found at the clicked position"
+    },
+
+    "options_randomSelection": {
+        "message": "Random"
+    },
     "options_selectAvailableTexts": {
         "message": "Select available texts"
-    },
-    "options_saveButton": {
-        "message": "Save"
     },
 
     "popup_units_paragraphs": {
